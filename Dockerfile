@@ -1,34 +1,21 @@
 FROM ubuntu:22.04
 
-# Rust
-# rustc test.rs --target wasm32-wasi
-
-# C
-# clang --target=wasm32-wasi --sysroot /tmp/wasi-libc -o test.wasm test.c --rtlib=compiler-rt
-
-# Dotnet
-# dotnet new console -o MyFirstWasiApp
-# cd MyFirstWasiApp
-# dotnet add package Wasi.Sdk --prerelease
-# dotnet build
-
-# Go
-# GOROOT=/usr/local/go tinygo build -wasm-abi=generic -target=wasi -o main.wasm main.go
-
-RUN apt update && apt install curl xz-utils -y -qq
-RUN curl https://wasmtime.dev/install.sh -sSf | bash
+# wasmtime
+RUN apt update && \
+    apt install curl xz-utils -y -qq && \
+    curl https://wasmtime.dev/install.sh -sSf | bash
 
 # Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-RUN /root/.cargo/bin/rustup target add wasm32-wasi
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+    /root/.cargo/bin/rustup target add wasm32-wasi
 
 # C (Clang)
+ENV WASI_VERSION=17
+ENV WASI_VERSION_FULL=17.0
 RUN apt install llvm clang -y -qq
-RUN apt install git make -y -qq
-RUN git clone https://github.com/CraneStation/wasi-libc.git && cd wasi-libc && make install INSTALL_DIR=/tmp/wasi-libc
-RUN curl https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-16/libclang_rt.builtins-wasm32-wasi-16.0.tar.gz -L --output libclang_rt.builtins-wasm32-wasi-16.0.tar.gz
-RUN tar -xzf libclang_rt.builtins-wasm32-wasi-16.0.tar.gz
-RUN mkdir /usr/lib/llvm-14/lib/clang/14.0.0/lib/wasi && mv lib/wasi/libclang_rt.builtins-wasm32.a /usr/lib/llvm-14/lib/clang/14.0.0/lib/wasi/
+RUN curl https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_VERSION}/wasi-sdk-${WASI_VERSION_FULL}-linux.tar.gz -L --output wasi-sdk-${WASI_VERSION_FULL}-linux.tar.gz && \
+    tar xvf wasi-sdk-${WASI_VERSION_FULL}-linux.tar.gz && \
+    rm wasi-sdk-${WASI_VERSION_FULL}-linux.tar.gz
 
 # Dotnet
 RUN apt install lld-14 -y -qq
